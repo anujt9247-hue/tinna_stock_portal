@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tinna Rubber - Final Working Delete & Stock System</title>
+    <title>Tinna Rubber - Secure Lock & Stock System</title>
     <style>
         body { font-family: Arial, sans-serif; background-color: #f4f6f9; margin: 0; padding: 20px; }
         .container { max-width: 1400px; margin: 0 auto; background: #fff; padding: 25px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
@@ -46,7 +46,7 @@
 <body>
 
 <div class="container">
-    <h2>Tinna Rubber - Entry Management Portal (Delete Fixed)</h2>
+    <h2>Tinna Rubber - Entry Management Portal (Security Lock Active)</h2>
     
     <div class="flex-container">
         <!-- Main Form Block -->
@@ -191,6 +191,9 @@
 </div>
 
 <script>
+    // --- SECURITY LOCK CONFIGURATION ---
+    const SECURITY_PIN = "1234"; // Bhai aap apna password yahan badal sakte hain
+
     let entriesRegistry = JSON.parse(localStorage.getItem('tinna_entries')) || [];
     let stockLedger = {};
     let rowCount = 0;
@@ -412,28 +415,32 @@
         renderLogTable(filtered);
     }
 
-    // 100% FIXED ABSOLUTE BYPASS INTERACTION FOR DELETE BUTTON
+    // --- SECURE DELETE WITH PASSWORD ---
     window.deleteInvoiceEntry = function(event, id) {
         if(event) {
             event.preventDefault();
             event.stopPropagation();
         }
         
+        // Ask for Pin Lock
+        const userPin = prompt("Security Lock: Kripya Delete karne ke liye Password daalein:");
+        if (userPin === null) return; // User cancelled
+        
+        if (userPin !== SECURITY_PIN) {
+            alert("❌ Galat Password! Aap entry delete nahi kar sakte.");
+            return;
+        }
+        
         if(confirm("Kya aap sach me is invoice ko delete karna chahte hain? Isse stock automatic update ho jayega.")) {
-            // Filter list matching strings explicitly
             entriesRegistry = entriesRegistry.filter(entry => String(entry.id) !== String(id));
-            
-            // Sync with browser database storage
             localStorage.setItem('tinna_entries', JSON.stringify(entriesRegistry));
             
-            // If the deleted invoice was open in editor mode, reset fields
             if(String(document.getElementById('editEntryId').value) === String(id)) {
                 resetForm();
                 document.getElementById('saveBtn').innerText = "Save Entry";
                 document.getElementById('saveBtn').style.backgroundColor = "#1e3a8a";
             }
             
-            // Refresh Live Counters and logs
             recalculateAllStock();
             renderLogTable();
             document.getElementById('searchInput').value = '';
@@ -442,6 +449,7 @@
         }
     };
 
+    // --- SECURE SAVE / UPDATE WITH PASSWORD ---
     function submitForm() {
         const invoiceNo = document.getElementById('invoiceNo').value.trim();
         const partyName = document.getElementById('partyName').value.trim();
@@ -453,6 +461,15 @@
         });
         if(unconfirmedRows) {
             if(!confirm("Kuch rows abhi bhi open hain. Kya aap unhe confirm karke invoice save karna chahte hain?")) return;
+        }
+
+        // Ask for Pin Lock before Saving/Updating
+        const userPin = prompt("Security Lock: Invoice Save/Update karne ke liye Password daalein:");
+        if (userPin === null) return;
+        
+        if (userPin !== SECURITY_PIN) {
+            alert("❌ Galat Password! Data save nahi hua.");
+            return;
         }
 
         const editId = document.getElementById('editEntryId').value;
@@ -505,7 +522,17 @@
         resetForm();
     }
 
+    // --- SECURE EDIT INITIALIZATION WITH PASSWORD ---
     function editEntry(id) {
+        // Ask for Pin Lock before loading data into inputs
+        const userPin = prompt("Security Lock: Entry Edit karne ke liye Password daalein:");
+        if (userPin === null) return;
+        
+        if (userPin !== SECURITY_PIN) {
+            alert("❌ Galat Password! Aap is entry ko edit nahi kar sakte.");
+            return;
+        }
+
         const entry = entriesRegistry.find(e => String(e.id) === String(id));
         if(!entry) return;
 
